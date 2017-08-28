@@ -64,7 +64,7 @@ let gpwd =
 
 
 let cmd =
-  let doc = "Democratic Role Play Game Server" in
+  let doc = "Democratic Rule Game Server" in
   let man = [
     `S Manpage.s_bugs;
     `P "Report bugs via issues on ???"
