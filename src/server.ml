@@ -1,5 +1,6 @@
 
 open Ext_std
+open Game
 open Lwt
 
 
@@ -69,7 +70,7 @@ let run ?(port=5678) world =
     let%lwt server = 
       Lwt_io.establish_server_with_client_address ip handler
     in
-    Lwt_io.printl ("Server started at " ^ string_of_addr ip ^ ".")
+    Lwt_io.printl ("Server listens to " ^ string_of_addr ip ^ ".")
     >> wait_quit 
     >> Lwt_io.printl ("Shutting down server...")
     >> Lwt_io.shutdown_server server

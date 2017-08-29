@@ -20,9 +20,9 @@ let event_info aid world =
   { aid; aname; fail=false; date; msg=[]}
 
 
-let register_event ev world = { 
+let register_event (ev, info) world = { 
   world with 
-  past  = Id.w_id world.count ev :: world.past; 
+  past  = Id.w_id world.count (Game_auth.obscure_event ev, info) :: world.past; 
   count = world.count + 1 
 }
 

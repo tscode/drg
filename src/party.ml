@@ -21,9 +21,9 @@ let has_member mname party =
 let has_member_w_id id party =
   List.exists (Id.has_id id) (members party)
 
-let censor ?except_id party =
+let obscure ?except_id party =
   let members = Id.map_w_id (fun id x ->
-    if Some id = except_id then x else Member.censor x
+    if Some id = except_id then x else Member.obscure x
   ) party.members in
   { party with members }
 
@@ -42,6 +42,9 @@ let member_w_id id party =
 
 let name_w_id id party =
   Id.find_w_id id (members party) |> Member.name
+
+let id_w_name name party =
+  Id.find_id (Member.has_name name) (members party)
 
 let add_member ?(date=Date.now ()) ~id mname pwd party =
   if has_member mname party then raise Party_error

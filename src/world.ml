@@ -45,6 +45,7 @@ let create ~name ~god () = {
 }
 
 
+
 let save fname world =
   to_yojson world |> Yojson.Safe.to_file fname
 
@@ -55,3 +56,5 @@ let load fname =
     error ("Could not load world file '" ^ fname ^ "'")
   | exception Yojson.Json_error _ -> 
     error ("Could not parse world file '" ^ fname ^ "'")
+
+
