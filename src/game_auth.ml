@@ -20,6 +20,9 @@ let card ion pwd = { ion; pwd }
 let id i = Id i
 let name n = Name n
 
+let set_id i card = { card with ion = id i }
+let set_name n card = { card with ion = name n }
+
 let auth_id id pwd world =
   match id = -1, pwd = Member.pwd world.god with
   | true, true -> ok id

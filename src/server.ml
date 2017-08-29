@@ -3,14 +3,41 @@ open Ext_std
 open Game
 open Lwt
 
+(* TODO:
+    * logging
+*)
 
-let handle_query query worldref =
-  let world, ans = Comm.process !worldref query in
-  worldref := world; 
-  Lwt_io.printl "Query handled" >> return ans
+(* Login Query *)
 
-let send_answer oc ans =
-  Lwt_io.write_line oc (Comm.A.encode ans)
+let guest_card        = Auth.card (Auth.name "Guest") ""
+let ret_error msg     = return (error (Comm.A.Error msg))
+let ret_card id card  = return (ok (id, Auth.set_id id card))
+let login_answer q wr = snd (Comm.process guest_card q !wr)
+
+let handle_login query worldref = match query with
+  | Comm.Q.Login card -> begin 
+    match login_answer query worldref with
+    | Comm.A.Login (Ok id)     -> ret_card id card
+    | Comm.A.Login (Error msg) -> ret_error msg
+    | _ -> ret_error "Internal inconsistency"
+    end
+  | _ -> ret_error "Queries can only be handled after logging in."
+
+let login worldref ic oc () =
+  Lwt_io.read_line_opt ic >>= function 
+  | None -> ret_error "Connection closed before login"
+  | Some str -> match Comm.Q.decode str with
+    | Ok query -> handle_login query worldref
+    | Error er -> ret_error ("Failure during login: " ^ er)
+
+
+ (* Non-login Query *)
+
+let send_answer oc ans = Lwt_io.write_line oc (Comm.A.encode ans)
+
+let handle_query card query worldref =
+  let world, ans = Comm.process card query !worldref in
+  worldref := world; Lwt_io.printl "Query handled" >> return ans
 
 let string_of_addr = function
   | Unix.ADDR_UNIX file -> "unix:" ^ file
@@ -27,22 +54,30 @@ let create_socket ?(backlog=10) ~port ~addr () =
   Lwt_unix.(listen sock backlog) |> ignore;
   sock
 
-let rec connection_loop worldref ic oc () =
+let rec connection_loop card worldref ic oc () =
   Lwt_io.read_line_opt ic >>= function
   | None -> return () 
   | Some str -> begin 
     match Comm.Q.decode str with
-    | Error e -> return (Comm.A.Error ("Failure parsing message: " ^ e))
-    | Ok query -> handle_query query worldref
+    | Error e -> return (Comm.A.Error ("Failure parsing query: " ^ e))
+    | Ok query -> handle_query card query worldref
     end
     >>= send_answer oc
-    >>= connection_loop worldref ic oc
+    >>= connection_loop card worldref ic oc
 
 let rec handle_connection worldref ip (ic, oc) =
-  Lwt_io.printl ("Player connected from " ^ string_of_addr ip)
-  >>= connection_loop worldref ic oc 
-  >>  Lwt_io.printl ("Player from " ^ string_of_addr ip ^ " disconnected")
-  >>  close_channels ic oc
+  Lwt_io.printl ("Player connected from " ^ string_of_addr ip ^ ".")
+  >>= login worldref ic oc >>= begin function
+    | Ok (id, card) ->
+      Lwt_io.printl ("Login with id " ^ Id.str id ^ " successful.")
+      >>= connection_loop card worldref ic oc 
+    | Error ans -> 
+      Lwt_io.printl ("Login failed.")
+      >> send_answer oc ans
+      >> Lwt_unix.sleep 0.001
+    end
+    >>  Lwt_io.printl ("Player from " ^ string_of_addr ip ^ " disconnected.")
+    >>  close_channels ic oc
 
 let register_signal_handlers quit =
   let f s _ = 

@@ -2,18 +2,21 @@
 open Ext_std
 open World
 
+module Auth = Game_auth
+
 
 module Q = struct
 
 type t =
-  | World of Game_auth.card
-  | Name  of Game_auth.card
-  | God   of Game_auth.card
-  | Party of Game_auth.card
-  | Rules of Game_auth.card
-  | Ballots of Game_auth.card
-  | History of Game_auth.card * int
-  | Event   of Game_auth.card * Event.t 
+  | World
+  | Name
+  | God
+  | Party
+  | Rules
+  | Ballots
+  | History of int
+  | Event of Event.t
+  | Login of Game_auth.card
   [@@deriving show, yojson]
 
 
@@ -30,16 +33,16 @@ end
 module A = struct
 
 type t =
-  | World of World.t
-  | Name  of bytes
-  | God   of Member.t
-  | Party of Party.t
+  | World   of World.t
+  | Name    of bytes
+  | God     of Member.t
+  | Party   of Party.t
   | Rules   of (Rule.t     * World.rule_info)  Id.w_id list
   | Ballots of (Mod.t list * World.vote_info)  Id.w_id list
   | History of (Event.t    * World.event_info) Id.w_id list
   | Event   of (bytes list, bytes list) result
-  | Auth of bytes
-  | Error of bytes
+  | Login   of (Id.id, bytes) result
+  | Error   of bytes
   [@@deriving show, yojson]
 
 
@@ -80,23 +83,24 @@ let process_history n world =
 let process_event card e world =
   let world, msg_res = Game_dynamic.evolve card e world in
   (world, A.Event msg_res)
-  (*match Game_dynamic.evolve card e world with*)
-  (*| Ok    (world, msg) -> (world, A.Event (ok msg))*)
-  (*| Error (world, msg) -> (world, A.Event (error msg))*)
 
+let process_login card world =
+  let ans = Auth.auth card world in 
+  (world, A.Login ans)
 
-let process world query = try
-  let open Game_auth in match query with
-  | Q.World card -> process_world (obscure_exn card world)
-  | Q.Name  card -> process_name  (obscure_exn card world)
-  | Q.God   card -> process_god   (obscure_exn card world)
-  | Q.Party card -> process_party (obscure_exn card world)
-  | Q.Rules card -> process_rules (obscure_exn card world) 
-  | Q.Ballots  card     -> process_ballots (obscure_exn card world) 
-  | Q.History (card, n) -> process_history n (obscure_exn card world)
-  | Q.Event   (card, e) -> process_event card e world
+let process card query world = try
+  match query with
+  | Q.World -> process_world (Auth.obscure_exn card world)
+  | Q.Name  -> process_name  (Auth.obscure_exn card world)
+  | Q.God   -> process_god   (Auth.obscure_exn card world)
+  | Q.Party -> process_party (Auth.obscure_exn card world)
+  | Q.Rules -> process_rules (Auth.obscure_exn card world) 
+  | Q.Ballots    -> process_ballots (Auth.obscure_exn card world) 
+  | Q.History n  -> process_history n (Auth.obscure_exn card world)
+  | Q.Event   ev -> process_event card ev world
+  | Q.Login card -> process_login card world
   with
-  | Game_auth.Auth_error m -> (world, A.Auth m)
+  | Game_auth.Auth_error m -> (world, A.Login (error m))
 
 
 
