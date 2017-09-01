@@ -7,17 +7,21 @@ open Lwt
     * logging
 *)
 
+(* Auxilliary Definitions *)
+
+let guest_card = Auth.card (Auth.name "Guest") ""
+let answer q wr = snd (Comm.process guest_card q !wr)
+let ret_error msg = return (error (Comm.A.Error msg, msg))
+let ret_card id card ans = return (ok (id, Auth.set_id id card, ans))
+let send_answer oc ans = Lwt_io.write_line oc (Comm.A.encode ans)
+
+
 (* Login Query *)
 
-let guest_card        = Auth.card (Auth.name "Guest") ""
-let ret_error msg     = return (error (Comm.A.Error msg))
-let ret_card id card  = return (ok (id, Auth.set_id id card))
-let login_answer q wr = snd (Comm.process guest_card q !wr)
-
 let handle_login query worldref = match query with
-  | Comm.Q.Login card -> begin 
-    match login_answer query worldref with
-    | Comm.A.Login (Ok id)     -> ret_card id card
+  | Comm.Q.Login card -> let ans = answer query worldref in
+    begin match ans with
+    | Comm.A.Login (Ok id) -> ret_card id card ans
     | Comm.A.Login (Error msg) -> ret_error msg
     | _ -> ret_error "Internal inconsistency"
     end
@@ -31,9 +35,8 @@ let login worldref ic oc () =
     | Error er -> ret_error ("Failure during login: " ^ er)
 
 
- (* Non-login Query *)
+(* Non-login Query *)
 
-let send_answer oc ans = Lwt_io.write_line oc (Comm.A.encode ans)
 
 let handle_query card query worldref =
   let world, ans = Comm.process card query !worldref in
@@ -65,14 +68,18 @@ let rec connection_loop card worldref ic oc () =
     >>= send_answer oc
     >>= connection_loop card worldref ic oc
 
+
+(* Handle single connection *)
+
 let rec handle_connection worldref ip (ic, oc) =
-  Lwt_io.printl ("Player connected from " ^ string_of_addr ip ^ ".")
+  Lwt_io.print ("Player connected from " ^ string_of_addr ip ^ ". ")
   >>= login worldref ic oc >>= begin function
-    | Ok (id, card) ->
-      Lwt_io.printl ("Login with id " ^ Id.str id ^ " successful.")
+    | Ok (id, card, ans) ->
+      Lwt_io.printl ("Login as member " ^ Id.str id ^ " was successful.")
+      >>  send_answer oc ans
       >>= connection_loop card worldref ic oc 
-    | Error ans -> 
-      Lwt_io.printl ("Login failed.")
+    | Error (ans, msg) -> 
+      Lwt_io.printl ("Login failed: " ^ msg ^ ".")
       >> send_answer oc ans
       >> Lwt_unix.sleep 0.001
     end

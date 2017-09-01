@@ -1,0 +1,4 @@
+true:   package(unix), package(ppx_deriving.show), package(ppx_deriving_yojson)
+true:   package(lwt), package(lwt.unix), package(lwt.ppx)
+true:   package(yojson), package(cmdliner)
+true:   bin_annot

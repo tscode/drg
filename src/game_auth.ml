@@ -26,7 +26,8 @@ let set_name n card = { card with ion = name n }
 let auth_id id pwd world =
   match id = -1, pwd = Member.pwd world.god with
   | true, true -> ok id
-  | true, false -> error ("Wrong password for god " ^ (Member.name world.god))
+  | true, false -> 
+    error ("Wrong password for god '" ^ (Member.name world.god) ^ "'")
   | false, _ ->
     let a = Party.has_member_w_id id world.party in
     let b = Party.is_authorized_w_id id pwd world.party in
