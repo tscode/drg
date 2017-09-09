@@ -44,7 +44,12 @@ let name_w_id id party =
   Id.find_w_id id (members party) |> Member.name
 
 let id_w_name name party =
-  Id.find_id (Member.has_name name) (members party)
+  try Id.find_id (Member.has_name name) (members party) with
+  Not_found -> raise Party_error
+
+let id_w_row name party =
+  try Id.find_id (Row.has_name name) (party.rows) with
+  Not_found -> raise Party_error
 
 let add_member ?(date=Date.now ()) ~id mname pwd party =
   if has_member mname party then raise Party_error

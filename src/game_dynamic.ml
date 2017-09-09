@@ -32,7 +32,7 @@ let finish info world = match info.fail with
   | true  -> (world, error info.msg)
 
 
-let err_nex a id  = error (a ^ " " ^ Id.str id ^ "does not exist")
+let err_nex a id  = error (a ^ " " ^ Id.str id ^ " does not exist")
 let err_ex a name = error (a ^ " with name '" ^ name ^ "' already exists")
 
 

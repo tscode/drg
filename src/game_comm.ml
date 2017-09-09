@@ -25,7 +25,7 @@ let encode q = to_yojson q |> Yojson.Safe.to_string
 let decode str =
   match Yojson.Safe.from_string str |> of_yojson with
   | Result.Ok a -> ok a
-  | _ -> error "Could not parse query"
+  | _ -> error "Could not understand query"
   | exception Yojson.Json_error _ -> error "Could not parse query"
 
 end
@@ -58,7 +58,7 @@ end
 
 
 let process_world world =
-  (world, A.World world)
+    (world, A.World World.{ world with past=[] } )
 
 let process_name world =
   (world, A.Name world.name)

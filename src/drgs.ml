@@ -64,13 +64,14 @@ let gpwd =
 
 
 let cmd =
-  let doc = "Democratic Rule Game Server" in
+  let doc = "Democratic Rule Game Server." in
+  let exits = Term.default_exits in
   let man = [
     `S Manpage.s_bugs;
     `P "Report bugs via issues on ???"
   ] in
   Term.(ret (const run $ port $ save $ load $ wname $ gname $ gpwd)),
-  Term.info "drgs" ~version:"v0.1" ~doc ~exits:Term.default_exits ~man
+  Term.info "drgs" ~version:"v0.1" ~doc ~exits ~man
 
 let () = Term.(exit @@ eval cmd)
 

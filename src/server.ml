@@ -50,19 +50,19 @@ let string_of_addr = function
 let close_channels ic oc =
   Lwt_io.close ic >> Lwt_io.close oc >> return ()
 
-let create_socket ?(backlog=10) ~port ~addr () =
-  let ip = Unix.inet_addr_of_string addr in
-  let sock = Lwt_unix.(socket PF_INET SOCK_STREAM 0) in
-  Lwt_unix.(bind sock (ADDR_INET (ip, port))) |> ignore;
-  Lwt_unix.(listen sock backlog) |> ignore;
-  sock
+(*let create_socket ?(backlog=10) ~port ~addr () =*)
+  (*let ip = Unix.inet_addr_of_string addr in*)
+  (*let sock = Lwt_unix.(socket PF_INET SOCK_STREAM 0) in*)
+  (*Lwt_unix.(bind sock (ADDR_INET (ip, port))) |> ignore;*)
+  (*Lwt_unix.(listen sock backlog) |> ignore;*)
+  (*sock*)
 
 let rec connection_loop card worldref ic oc () =
   Lwt_io.read_line_opt ic >>= function
   | None -> return () 
   | Some str -> begin 
     match Comm.Q.decode str with
-    | Error e -> return (Comm.A.Error ("Failure parsing query: " ^ e))
+    | Error e -> return (Comm.A.Error ("Failure decoding query: " ^ e))
     | Ok query -> handle_query card query worldref
     end
     >>= send_answer oc

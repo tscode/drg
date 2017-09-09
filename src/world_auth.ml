@@ -5,21 +5,20 @@ open World
 
 exception Auth_error of bytes
 
-(* union of id and name when both is viable *)
 type ion =
   | Id of int
   | Name of bytes
   [@@deriving show, yojson]
-
-let id   a = Id a
-let name n = Name n
 
 type card = {
   ion : ion;
   pwd : bytes
 } [@@deriving show, yojson]
 
+
 let card ion pwd = { ion; pwd }
+let id i = Id i
+let name n = Name n
 
 let set_id i card = { card with ion = id i }
 let set_name n card = { card with ion = name n }
@@ -88,4 +87,3 @@ let obscure_exn card world =
 let ion_of_string ion_str =
   try id (int_of_string ion_str) with
   | Failure _ -> name ion_str
-

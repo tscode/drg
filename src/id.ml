@@ -1,8 +1,15 @@
 
 open Ext_std
 
+(* ids and counters *)
 type id = int [@@deriving show, yojson]
+type counter = int [@@deriving show, yojson]
 
+let counter () = 0
+let incr c = c + 1
+
+
+(* types wrapped with ids *)
 type 'a w_id = {
   id  : id;
   dat : 'a
@@ -29,7 +36,4 @@ let exists_w_id id l = List.exists (has_id id) l
 
 
 
-type counter = int [@@deriving show, yojson]
 
-let counter () = 0
-let incr c = c + 1

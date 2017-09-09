@@ -10,6 +10,12 @@ type ('a, 'b) result =
 let ok a = Ok a
 let error a = Error a
 
+let is_ok = function Ok _ -> true | _ -> false
+let is_error a = not (is_ok a)
+
+let strip_ok = function Ok a -> a | _ -> raise Not_found
+let strip_error = function Error a -> a | _ -> raise Not_found
+
 let identity a = a
 
 module Util = struct
@@ -111,6 +117,13 @@ let rec filteri f l =
   in
   aux f 0 l
 
+
+let separate f l = 
+  let rec aux f yes no = function
+    | [] -> yes, no
+    | h :: t -> if f h then aux f (h :: yes) no t else aux f yes (h :: no) t
+  in
+  aux f [] [] l
 
 end
 

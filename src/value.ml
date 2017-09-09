@@ -44,6 +44,13 @@ module Raw = struct
     | Float  a -> string_of_float a
     | Bool   a -> string_of_bool a
     | String a -> a
+
+  let parse str = 
+    try bool  (bool_of_string str)  with Invalid_argument _ ->
+    try int   (int_of_string str)   with Failure _ ->
+    try float (float_of_string str) with Failure _ -> 
+    string str
+
 end
 
 module Named = struct
@@ -82,6 +89,12 @@ module Named = struct
     | Float  {name=_; data} -> Type.Float
     | Bool   {name=_; data} -> Type.Bool
     | String {name=_; data} -> Type.String
+
+  let of_raw name = function
+    | Raw.Int    a -> int    name a
+    | Raw.Float  a -> float  name a
+    | Raw.Bool   a -> bool   name a
+    | Raw.String a -> string name a
 
 end
 
