@@ -1,7 +1,8 @@
 
 exception Not_implemented
+exception Exists
 
-type ('a, 'b) result =
+type ('a, 'b) res =
   | Ok of 'a
   | Error of 'b
   [@@deriving show, yojson]
@@ -16,7 +17,23 @@ let is_error a = not (is_ok a)
 let strip_ok = function Ok a -> a | _ -> raise Not_found
 let strip_error = function Error a -> a | _ -> raise Not_found
 
+let lift_ok f = function
+  | Ok a -> ok (f a)
+  | Error err  -> error err
+
+let lift_error g = function
+  | Ok a -> ok a
+  | Error e -> error (g e)
+
+let lift_result f g = function
+  | Ok a -> ok (f a)
+  | Error e -> error (g e)
+
 let identity a = a
+
+let compose f g x = f (g x)
+let ($) f g = compose f g
+
 
 module Util = struct
 
@@ -69,9 +86,18 @@ let remi f l =
   in
   aux f 0 l
 
-let find_idx f l = 
+let findi f l =
   let rec aux f i = function
-  | [] -> -1
+  | [] -> raise Not_found
+  | h :: t -> match f i h with
+    | true -> h
+    | false -> aux f (i+1) t
+  in
+  aux f 0 l
+
+let find_index f l = 
+  let rec aux f i = function
+  | [] -> raise Not_found
   | h :: t -> match f h with
     | true -> i
     | false -> aux f (i+1) t
@@ -95,7 +121,7 @@ let repi f g l =
   aux f g 0 l
 
 let rec ntimes n a =
-  if n <= 0 then [] else a :: ntimes (n-1) a
+  if n <= 0 then [] else a :: ntimes (n - 1) a
 
 
 let rec diff cmp l l' =
@@ -125,6 +151,26 @@ let separate f l =
   in
   aux f [] [] l
 
+
+let collect_results l = 
+  match separate is_ok l with
+  | _, [] -> ok (List.map strip_ok l)
+  | _, errs -> error (List.map strip_error errs)
+
+
+let embedd x = [x]
+
+let rec take l n = match l with
+  | h :: t -> if n > 0 then h :: take t (n-1) else []
+  | [] -> []
+
+let rec drop l n = match l with
+  | h :: t -> if n > 0 then drop t (n-1) else l
+  | [] -> []
+
+
+let sub l n k = take (drop l n) k
+
 end
 
 module Ordered = struct
@@ -146,5 +192,14 @@ let rec remove ?(cmp=Pervasives.compare) a = function
     | 1 -> h :: remove a t
     | -1 -> l
     | _ -> t
+
+end
+
+module Bytes = struct
+
+include Bytes
+
+let replace input output =
+  Str.global_replace (Str.regexp_string input) output
 
 end

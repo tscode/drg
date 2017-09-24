@@ -1,24 +1,26 @@
 
 open Ext_std
+open Id
 open Value
 
 type t =
- 
-  | Add_row of Named.t
-  | Add_rule of Id.id list * Rule.t
-  | Add_member of Member.t
-
-  | Del_row of Id.id
-  | Del_rule of Id.id
-  | Del_member of Id.id
-
+  | Add_mem  of Member.t
+  | Add_row  of Named.t
+  | Add_rule of Ion.t list * Rule.t
+  | Del_mem  of Ion.t
+  | Del_row  of Ion.t
+  | Del_rule of Ion.t
   [@@deriving show, yojson]
 
+type pack = t list [@@deriving show, yojson]
 
+let pack l = l
+
+let add_mem a    = Add_mem a
 let add_row a    = Add_row a
 let add_rule m r = Add_rule (m, r)
-let add_member a = Add_member a
 
-let del_row id    = Del_row id
-let del_rule id   = Del_rule id
-let del_member id = Del_member id
+let del_mem  ion = Del_mem  ion
+let del_row  ion = Del_row  ion
+let del_rule ion = Del_rule ion
+

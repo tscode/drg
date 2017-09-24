@@ -17,6 +17,12 @@ module Type = struct
   let bool   = Bool
   let string = String
 
+  let to_string = function
+    | Int    -> "int"
+    | Float  -> "float"
+    | Bool   -> "bool"
+    | String -> "string"
+
 end
 
 module Raw = struct
@@ -45,11 +51,14 @@ module Raw = struct
     | Bool   a -> string_of_bool a
     | String a -> a
 
-  let parse str = 
+  let of_string str = 
     try bool  (bool_of_string str)  with Invalid_argument _ ->
     try int   (int_of_string str)   with Failure _ ->
     try float (float_of_string str) with Failure _ -> 
-    string str
+    let l = Bytes.length str in
+    match str.[0] = '"' && str.[l-1] = '"' with
+    | true  -> string (Bytes.sub str 1 (l-2))
+    | false -> string str
 
 end
 
@@ -72,13 +81,13 @@ module Named = struct
   let bool   name data = Bool   {name; data}
   let string name data = String {name; data}
 
-  let name = function
+  let p_name = function
     | Int    {name; data=_}
     | Float  {name; data=_}
     | Bool   {name; data=_}
     | String {name; data=_} -> name
 
-  let to_raw = function
+  let p_raw = function
     | Int    {name=_; data} -> Raw.Int data
     | Float  {name=_; data} -> Raw.Float data
     | Bool   {name=_; data} -> Raw.Bool data
@@ -98,6 +107,36 @@ module Named = struct
 
 end
 
+module Cell = struct
+
+ type 'a cell = 'a list
+
+ type t =
+   | Int of int cell
+   | Float of float cell
+   | Bool of bool cell
+   | String of string cell
+
+
+ let int a = Int a
+ let float a = Float a
+ let bool a = Bool a
+ let string a = String a
+
+ let length = function
+   | Int    a -> List.length a
+   | Float  a -> List.length a
+   | Bool   a -> List.length a
+   | String a -> List.length a
+
+ let to_string_list = function
+   | Int    a -> List.map string_of_int a
+   | Float  a -> List.map string_of_float a
+   | Bool   a -> List.map string_of_bool a
+   | String a -> a
+
+end
+
 
 module Row = struct
 
@@ -107,6 +146,8 @@ module Row = struct
     dates : Date.t list list;
     default : 'a;
   } [@@deriving show, yojson]
+
+
 
   let _create ~date name default n = {
     name;
@@ -162,6 +203,7 @@ module Row = struct
   let bool ~date n name def = Bool (_create ~date name def n)
   let string ~date n name def = String (_create ~date name def n)
 
+
   let of_raw ~date n name = function
     | Raw.Int    a -> Int    (_create ~date name a n)
     | Raw.Float  a -> Float  (_create ~date name a n)
@@ -174,13 +216,19 @@ module Row = struct
     | Bool _ -> Type.Bool
     | String _ -> Type.String
 
-  let name = function
+  let p_name = function
     | Int a    -> _name a
     | Float a  -> _name a
     | Bool a   -> _name a
     | String a -> _name a
 
-  let has_name n r = name r = n
+  let p_default = function
+    | Int    a -> Raw.Int    a.default
+    | Float  a -> Raw.Float  a.default
+    | Bool   a -> Raw.Bool   a.default
+    | String a -> Raw.String a.default
+
+  let has_name n r = (p_name r = n)
 
   let dates = function
     | Int a    -> _dates a
@@ -225,6 +273,12 @@ module Row = struct
     | _ -> raise Value_error
 
 
+  let get_cell n = function
+    | Int    a -> _get_cell n a |> Cell.int   
+    | Float  a -> _get_cell n a |> Cell.float 
+    | Bool   a -> _get_cell n a |> Cell.bool  
+    | String a -> _get_cell n a |> Cell.string
+
   let get_int_cell n = function
     | Int a -> _get_cell n a
     | _ -> raise Value_error 
@@ -242,6 +296,7 @@ module Row = struct
     | _ -> raise Value_error 
 
 
+
   let get_raw n = function
     | Int    a -> _get_cell n a |> List.hd |> Raw.int
     | Float  a -> _get_cell n a |> List.hd |> Raw.float
@@ -256,6 +311,8 @@ module Row = struct
 
   let get_dates n row = List.nth (dates row) n
   let get_date  n row = get_dates n row |> List.hd
+
+  let get_cell_length n row = get_cell n row |> Cell.length
 
   let get_cell_w_date f n row =
     List.map2 Date.w_date (f n row) (get_dates n row) 

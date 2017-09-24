@@ -1,10 +1,12 @@
 
 
-open Value
 open Ext_std
+open Value
+open Id
 
-module Mod = World_mod
-module Event = World_event
+module Mod    = World_mod
+module Event  = World_event
+module Ballot = World_ballot
 
 
 type rule_info = {
@@ -27,10 +29,10 @@ type t = {
   name    : bytes;
   god     : Member.t;
   party   : Party.t;
-  rules   : (Rule.t     * rule_info)  Id.w_id list;
-  past    : (Event.t    * event_info) Id.w_id list;
-  ballots : (Mod.t list * vote_info)  Id.w_id list;
-  count   : Id.counter
+  rules   : Rule.book;
+  past    : (Event.t    * event_info) Counted.clist;
+  ballots : Ballot.box;
+  count   : Counter.t
 } [@@deriving show, yojson]
 
 
@@ -41,9 +43,8 @@ let create ~name ~god () = {
   rules   = [];
   past    = [];
   ballots = [];
-  count   = Id.counter ()
+  count   = Counter.create ()
 }
-
 
 
 let save fname world =
@@ -57,4 +58,9 @@ let load fname =
   | exception Yojson.Json_error _ -> 
     error ("Could not parse world file '" ^ fname ^ "'")
 
-
+let p_name w = w.name
+let p_god w = w.god
+let p_party w = w.party
+let p_rules w = w.rules
+let p_past w = w.past
+let p_ballots w = w.ballots

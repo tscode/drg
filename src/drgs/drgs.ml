@@ -14,6 +14,7 @@ let run port save load wname gname gpwd =
     error ("God's password [-P, --god-pwd] must be " ^
     "given if no initial world file [-l, --load-path] is provided.")
   | "", (w, g, p) -> 
+    print_endline ("Created new world '" ^ w ^ "'.");
     ok (World.create ~name:w ~god:(Member.create g p) ())
   | path, _ -> 
     let world = World.load path
@@ -22,9 +23,13 @@ let run port save load wname gname gpwd =
   in
   match world with
   | Error msg -> `Error (false, msg)
-  | Ok world ->
-    match Server.run ~port world |> World.save save with
-    | () -> `Ok (print_endline ("Saved world file '" ^ save ^ "'."))
+  | Ok world  ->
+    match Server.run ~port world with
+    | Error msg -> let msg = "Could not start server: " ^ msg ^ " Exiting." in
+      `Error (false, msg)
+    | Ok world  -> 
+      let () = World.save save world in
+      `Ok (print_endline ("Saved world file '" ^ save ^ "'."))
 
 
 let port =
@@ -64,11 +69,10 @@ let gpwd =
 
 
 let cmd =
-  let doc = "Democratic Rule Game Server." in
+  let doc = "server for democratic rule games (drg)" in
   let exits = Term.default_exits in
   let man = [
-    `S Manpage.s_bugs;
-    `P "Report bugs via issues on ???"
+    `S Manpage.s_bugs; `P "Report bugs to github.com/tscode/drg."
   ] in
   Term.(ret (const run $ port $ save $ load $ wname $ gname $ gpwd)),
   Term.info "drgs" ~version:"v0.1" ~doc ~exits ~man

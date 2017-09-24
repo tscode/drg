@@ -1,4 +1,7 @@
-true:   package(unix), package(ppx_deriving.show), package(ppx_deriving_yojson)
+true:   package(unix), package(str)
+true:   package(ppx_deriving.show), package(ppx_deriving_yojson)
 true:   package(lwt), package(lwt.unix), package(lwt.ppx)
 true:   package(yojson), package(cmdliner)
+true:   package(angstrom)
 true:   bin_annot
+"src/drgc/drgc_show.ml": package(fmt)

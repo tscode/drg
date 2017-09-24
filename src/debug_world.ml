@@ -8,7 +8,7 @@ module E = World.Event
 module A = World.Mod
 open Evolve
 
-let gid = -1
+let gid = 0
 let gname = "Gody"
 let gpwd = "godpwd"
 let god = M.create gname gpwd
