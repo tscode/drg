@@ -31,7 +31,7 @@ let act_t conn_t = let open Drgc_act in
   Term.(const body $ ion $ form $ conn_t),
   Term.(info "act")
 
-let show_t conn_t = let open Drgc_show_ in
+let show_t conn_t = let open Drgc_show in
   Term.(const body $ sel $ conn_t),
   Term.(info "show")
 
